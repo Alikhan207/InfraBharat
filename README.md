@@ -2,11 +2,19 @@
 
 InfraBharat is an advanced infrastructure and smart city management platform. Built to optimize urban infrastructure utilizing data analytics, artificial intelligence, and community-driven reporting mechanisms.
 
+## About AMD Slingshot Integration
+
+This project was built with AMD architectures in mind. The `python-ml-backend` microservice (FastAPI + PyTorch) processes the heavy mathematical modeling such as:
+
+*   **Manning's Equation Engine** for calculating hydraulic roughness and velocity.
+*   **Darcy's Law Engine** for groundwater discharge.
+*   **Graph Neural Network (GNN)** structural risk prediction specifically architected to leverage **AMD Instinct MI300X** accelerators using ROCm and PyTorch Geometric.
+
 ## Project Structure
 
 This project encompasses multiple components:
 - **Frontend Dashboard:** A rich React application for officials and contractors to review, approve, and execute AI-generated recommendations.
-- **Python ML Backend:** Incorporates computer vision processing, structural risk analysis, and hydrology modeling APIs to fuel the platform's insights.
+- **Python ML Backend:** Incorporates computer vision processing, structural risk analysis, and hydrology modeling APIs designed for AMD high-performance hardware.
 - **Citizen Interfaces:** Modules to assist ordinary citizens in dynamically reporting urban issues like potholes, drainage problems, and faulty infrastructure utilizing chat interfaces and geolocation.
 
 ## Setup and Development
