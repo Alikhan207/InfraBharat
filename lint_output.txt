@@ -1,0 +1,45 @@
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\NotificationBell.tsx
+  57:6  warning  React Hook useEffect has a missing dependency: 'toast'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\WeatherRiskAlert.tsx
+  155:6  warning  React Hook useEffect has a missing dependency: 'fetchWeather'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\language-provider.tsx
+  220:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\theme-provider.tsx
+  67:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\badge.tsx
+  36:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\button.tsx
+  56:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\form.tsx
+  168:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\navigation-menu.tsx
+  119:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\sidebar.tsx
+  760:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\sonner.tsx
+  29:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\components\ui\toggle.tsx
+  43:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\pages\CitizenReporting.tsx
+  38:6  warning  React Hook useEffect has missing dependencies: 'checkAuth' and 'getCurrentLocation'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\pages\OfficerDashboard.tsx
+  38:6  warning  React Hook useEffect has missing dependencies: 'checkAuth' and 'fetchDashboardData'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\nawaz\Downloads\infra\infra-bharat-ai-vision-main\src\pages\OfficialDashboard.tsx
+  33:6  warning  React Hook useEffect has a missing dependency: 'fetchDashboardData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 14 problems (0 errors, 14 warnings)
+
