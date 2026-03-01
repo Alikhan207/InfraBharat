@@ -1,73 +1,53 @@
-# Welcome to your Lovable project
+# InfraBharat
 
-## Project info
+InfraBharat is an advanced infrastructure and smart city management platform. Built to optimize urban infrastructure utilizing data analytics, artificial intelligence, and community-driven reporting mechanisms.
 
-**URL**: https://lovable.dev/projects/4452b725-216e-4bad-a0a1-6cd8ebfcfb3a
+## Project Structure
 
-## How can I edit this code?
+This project encompasses multiple components:
+- **Frontend Dashboard:** A rich React application for officials and contractors to review, approve, and execute AI-generated recommendations.
+- **Python ML Backend:** Incorporates computer vision processing, structural risk analysis, and hydrology modeling APIs to fuel the platform's insights.
+- **Citizen Interfaces:** Modules to assist ordinary citizens in dynamically reporting urban issues like potholes, drainage problems, and faulty infrastructure utilizing chat interfaces and geolocation.
 
-There are several ways of editing your application.
+## Setup and Development
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/4452b725-216e-4bad-a0a1-6cd8ebfcfb3a) and start prompting.
+- [Node.js](https://nodejs.org/)
+- npm or yarn
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+1. Clone the repository:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/Alikhan207/InfraBharat.git
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Navigate into the project directory:
+```sh
+cd InfraBharat
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install dependencies:
+```sh
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Run the development server:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Technologies Used
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn-ui
+- **Backend Infrastructure:** Supabase, Deno Edge Functions
+- **Machine Learning Integration:** Python (FastAPI, PyTorch, Anthropic integrations)
+- **Mapping:** Leaflet/React-Leaflet, WebGL (Three.js/Deck.GL)
 
-**Use GitHub Codespaces**
+## Features Overview
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/4452b725-216e-4bad-a0a1-6cd8ebfcfb3a) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. **AI Flow & Budget Optimization:** Calculates best resource allocations for fixes.
+2. **Citizen Chatbot:** AI-assistant to gather feedback interactively.
+3. **Drainage Infrastructure 3D Twin:** Models and visualizes urban piping.
+4. **Geo-Spatial Analysis:** Maps problem areas and simulates crisis cascades (like floods).
