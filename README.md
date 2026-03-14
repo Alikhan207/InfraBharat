@@ -1,61 +1,80 @@
-# InfraBharat
+# InfraBharat -- AI Urban Infrastructure Intelligence Platform
 
-InfraBharat is an advanced infrastructure and smart city management platform. Built to optimize urban infrastructure utilizing data analytics, artificial intelligence, and community-driven reporting mechanisms.
+> 1st Place -- CIT Tumkur Ideathon (Karnataka ISTE Section) | 
+> 1st Place -- DataQuest 2025 (8-hour Hackathon) |
+> 1st Place -- CMRIT 3rd Semester Mini Project |
+> Shortlisted -- MSME 5.0 National Top 40
 
-## About AMD Slingshot Integration
+## What It Does
 
-This project was built with AMD architectures in mind. The `python-ml-backend` microservice (FastAPI + PyTorch) processes the heavy mathematical modeling such as:
+InfraBharat is an AI system that does not just predict urban flooding risk -- 
+it prescribes engineering-grade solutions. Given elevation data, rainfall 
+simulations, and citizen-reported infrastructure issues, it generates specific 
+actionable fixes: pipe diameter upgrades, slope corrections, and drainage 
+capacity improvements.
 
-*   **Manning's Equation Engine** for calculating hydraulic roughness and velocity.
-*   **Darcy's Law Engine** for groundwater discharge.
-*   **Graph Neural Network (GNN)** structural risk prediction specifically architected to leverage **AMD Instinct MI300X** accelerators using ROCm and PyTorch Geometric.
+Built for Indian cities where urban flooding causes billions in damage annually 
+and existing systems only warn citizens after the fact.
 
-## Project Structure
+## The Problem
 
-This project encompasses multiple components:
-- **Frontend Dashboard:** A rich React application for officials and contractors to review, approve, and execute AI-generated recommendations.
-- **Python ML Backend:** Incorporates computer vision processing, structural risk analysis, and hydrology modeling APIs designed for AMD high-performance hardware.
-- **Citizen Interfaces:** Modules to assist ordinary citizens in dynamically reporting urban issues like potholes, drainage problems, and faulty infrastructure utilizing chat interfaces and geolocation.
+Traditional flood management tools tell you WHERE flooding will happen.
+InfraBharat tells engineers exactly WHAT to fix and HOW.
 
-## Setup and Development
+## Key Features
 
-### Prerequisites
+- AI-generated engineering prescriptions using Manning's equation for 
+  hydraulic flow modelling
+- Citizen reporting portal with GPS-tagged infrastructure complaints
+- Engineer validation dashboard for reviewing and approving AI prescriptions
+- Municipal authority interface for execution tracking
+- Three-actor governance loop: Citizens -- AI -- Engineers -- Authorities
 
-- [Node.js](https://nodejs.org/)
-- npm or yarn
+## Tech Stack
 
-### Installation
+- Frontend: React
+- Backend: Python ML Backend (FastAPI)
+- Database: Supabase
+- Infrastructure: Docker, Docker Compose
+- AI/ML: Hydraulic modelling + ML prescription engine
 
-1. Clone the repository:
-```sh
-git clone https://github.com/Alikhan207/InfraBharat.git
+## Architecture
+```
+Citizen Portal (React)
+       |
+  AI Prescription Engine (Python ML Backend)
+       |
+  Engineer Validation Dashboard
+       |
+  Municipal Execution Tracker
+       |
+  Supabase (Real-time Database)
 ```
 
-2. Navigate into the project directory:
-```sh
-cd InfraBharat
-```
+## Awards
 
-3. Install dependencies:
-```sh
+- 1st Place -- CIT Tumkur Ideathon, Karnataka ISTE Section (December 2025)
+- 1st Place -- DataQuest 2025, 8-hour Hackathon (December 2025)
+- 1st Place -- CMRIT 3rd Semester Mini Project (Late 2025)
+- Shortlisted -- MSME 5.0 National Top 40 (August 2025)
+
+## Team
+
+- Mohammed Ali Khan (Founder & Lead) -- github.com/Alikhan207
+- Tanvik (Co-developer) -- github.com/tanvik21
+
+## How To Run
+```bash
+# Clone the repo
+git clone https://github.com/Alikhan207/InfraBharat
+
+# Frontend
+cd src
 npm install
+npm start
+
+# Backend
+cd python-ml-backend
+pip install -r requirements.txt
+python app.py
 ```
-
-4. Run the development server:
-```sh
-npm run dev
-```
-
-## Technologies Used
-
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn-ui
-- **Backend Infrastructure:** Supabase, Deno Edge Functions
-- **Machine Learning Integration:** Python (FastAPI, PyTorch, Anthropic integrations)
-- **Mapping:** Leaflet/React-Leaflet, WebGL (Three.js/Deck.GL)
-
-## Features Overview
-
-1. **AI Flow & Budget Optimization:** Calculates best resource allocations for fixes.
-2. **Citizen Chatbot:** AI-assistant to gather feedback interactively.
-3. **Drainage Infrastructure 3D Twin:** Models and visualizes urban piping.
-4. **Geo-Spatial Analysis:** Maps problem areas and simulates crisis cascades (like floods).
