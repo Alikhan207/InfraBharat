@@ -7,7 +7,7 @@
 
 ## What It Does
 
-InfraBharat is an AI system that does not just predict urban flooding risk -- 
+InfraBharat is an AI system that does not just predict urban flooding risk
 it prescribes engineering-grade solutions. Given elevation data, rainfall 
 simulations, and citizen-reported infrastructure issues, it generates specific 
 actionable fixes: pipe diameter upgrades, slope corrections, and drainage 
