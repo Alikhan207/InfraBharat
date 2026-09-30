@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGemini } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,37 +69,25 @@ serve(async (req) => {
     // Generate AI recommendations for high-risk zones if risk is high
     const recommendations = [];
     if (riskLevel === "high" && highRiskZones && highRiskZones.length > 0) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      
-      if (LOVABLE_API_KEY) {
+      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+
+      if (GEMINI_API_KEY) {
         for (const zone of highRiskZones.slice(0, 2)) {
           const prompt = `Generate a brief preventive recommendation for ${zone.name} zone with flood risk score ${zone.flood_risk_score}. Expected rainfall: ${avgDailyRainfall.toFixed(1)}mm over next 3 days. Keep it under 100 words, focus on immediate preventive actions.`;
 
           try {
-            const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "google/gemini-2.5-flash",
-                messages: [
-                  { role: "system", content: "You are a flood prevention expert. Provide concise, actionable recommendations." },
-                  { role: "user", content: prompt }
-                ],
-                temperature: 0.7,
-              }),
+            const aiData = await callGemini(
+              [
+                { role: "system", content: "You are a flood prevention expert. Provide concise, actionable recommendations." },
+                { role: "user", content: prompt },
+              ],
+              { temperature: 0.7 }
+            );
+            recommendations.push({
+              zone_id: zone.id,
+              zone_name: zone.name,
+              recommendation: aiData.choices[0].message.content,
             });
-
-            if (aiResponse.ok) {
-              const aiData = await aiResponse.json();
-              recommendations.push({
-                zone_id: zone.id,
-                zone_name: zone.name,
-                recommendation: aiData.choices[0].message.content,
-              });
-            }
           } catch (error) {
             console.error(`Failed to generate recommendation for zone ${zone.id}:`, error);
           }

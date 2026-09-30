@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGemini } from "../_shared/gemini.ts";
+import { transcribeAudio, translateText, detectLanguage } from "../_shared/google-cloud.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,14 +14,44 @@ serve(async (req) => {
   }
 
   try {
-    const { message, user_id, conversation_history } = await req.json();
+    const {
+      message: rawMessage,
+      user_id,
+      conversation_history,
+      audio_base64,
+      audio_encoding = "WEBM_OPUS",
+      audio_sample_rate_hertz = 48000,
+    } = await req.json();
+
+    // Voice intake: if audio was sent instead of/alongside text, transcribe
+    // it first (covers "voice, text, and messaging apps" intake requirement).
+    let message = rawMessage as string | undefined;
+    let transcript_used = false;
+    if (!message && audio_base64) {
+      const transcription = await transcribeAudio(
+        audio_base64,
+        audio_encoding,
+        audio_sample_rate_hertz
+      );
+      message = transcription.transcript;
+      transcript_used = true;
+    }
 
     if (!message) {
       return new Response(
-        JSON.stringify({ error: "message is required" }),
+        JSON.stringify({ error: "message or audio_base64 is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Multilingual intake: detect the citizen's language and translate to
+    // English for the AI pipeline. The final response is translated back
+    // to the same language before it's returned (see below).
+    const citizenLanguage = await detectLanguage(message).catch(() => "en");
+    const englishMessage =
+      citizenLanguage === "en"
+        ? message
+        : (await translateText(message, "en", citizenLanguage).catch(() => ({ translatedText: message }))).translatedText;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -39,6 +71,15 @@ serve(async (req) => {
       userReports = data || [];
     }
 
+    // Fetch latest active global reports to provide real-time situational awareness (RAG)
+    const { data: globalReportsData } = await supabase
+      .from("reports")
+      .select("title, category, address, severity, created_at")
+      .in("status", ["pending", "in_progress", "investigating"])
+      .order("created_at", { ascending: false })
+      .limit(15);
+    const globalReports = globalReportsData || [];
+
     // Build context for AI
     const systemPrompt = `You are a helpful infrastructure assistant for InfraBharat, helping citizens with drainage and waterlogging issues.
 
@@ -49,8 +90,11 @@ Your capabilities:
 4. Guide users on how to use the platform
 
 ${userReports.length > 0 ? `User's Recent Reports:
-${userReports.map(r => `- Report #${r.id.slice(0, 8)}: ${r.title} (${r.status}) - ${r.category} at ${r.address || "Unknown location"}`).join("\n")}` : ""}
-
+${userReports.map(r => `- Report #${r.id.slice(0, 8)}: ${r.title} (${r.status}) - ${r.category} at ${r.address || "Unknown location"}`).join("\n")}
+` : ""}
+${globalReports.length > 0 ? `Active City-Wide Reports (Real-time data):
+${globalReports.map(r => `- ${r.severity?.toUpperCase() || "UNKNOWN"} severity ${r.category} at ${r.address || "Unknown location"}: ${r.title}`).join("\n")}
+` : ""}
 Guidelines:
 - Be concise and helpful
 - If user wants to report an issue, ask for: location, description, and severity
@@ -74,11 +118,11 @@ Otherwise, respond conversationally.`;
     const messages = [
       { role: "system", content: systemPrompt },
       ...(conversation_history || []),
-      { role: "user", content: message }
+      { role: "user", content: englishMessage }
     ];
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
       // Provide a functional fallback response instead of crashing
 
       const lowerMsg = message.toLowerCase();
@@ -108,36 +152,19 @@ Otherwise, respond conversationally.`;
       );
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: messages,
-        temperature: 0.8,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
+    let aiData;
+    try {
+      aiData = await callGemini(messages, { temperature: 0.8 });
+    } catch (e) {
+      const status = (e as { status?: number })?.status;
+      if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Service temporarily unavailable." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      throw new Error("AI request failed");
+      throw new Error(`AI request failed: ${e.message || String(e)}`);
     }
-
-    const aiData = await aiResponse.json();
     const botMessage = aiData.choices[0].message.content;
 
     // Check if bot wants to create a report
@@ -151,10 +178,24 @@ Otherwise, respond conversationally.`;
       // Not a report intent, just regular conversation
     }
 
+    // Translate the conversational reply back to the citizen's language.
+    // (report_intent stays in English since it's structured data feeding
+    // the reports table, not something the citizen reads directly.)
+    let finalMessage: unknown = reportIntent ? reportIntent : botMessage;
+    if (!reportIntent && citizenLanguage !== "en") {
+      finalMessage = (
+        await translateText(botMessage, citizenLanguage, "en").catch(() => ({
+          translatedText: botMessage,
+        }))
+      ).translatedText;
+    }
+
     return new Response(
       JSON.stringify({
-        message: reportIntent ? reportIntent : botMessage,
+        message: finalMessage,
         type: reportIntent ? "report_intent" : "text",
+        detected_language: citizenLanguage,
+        transcript: transcript_used ? message : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

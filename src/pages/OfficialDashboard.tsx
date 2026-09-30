@@ -14,6 +14,7 @@ import { WeatherRiskAlert } from "@/components/WeatherRiskAlert";
 import { useLanguage } from "@/components/language-provider";
 import MapView from "@/components/MapView";
 import { DrainageVisualization3D } from "@/components/DrainageVisualization3D";
+import { NationalPriorityReport } from "@/components/NationalPriorityReport";
 import { LogOut, TrendingUp, AlertTriangle, MapPin, IndianRupee, Clock, CheckCircle } from "lucide-react";
 
 export default function OfficialDashboard() {
@@ -35,21 +36,17 @@ export default function OfficialDashboard() {
   const fetchDashboardData = async () => {
     const applyMockData = () => {
       setZones([
-        { id: '1', name: 'Zone 1 (Indiranagar)', flood_risk_score: 0.2, ward_number: 112, metadata: { description: 'Residential heavy', centroid: { lat: 12.9716, lng: 77.6412 }, last_inspection: '2024-03-01' }, population: 45000, area_sqkm: 4.2 },
-        { id: '2', name: 'Zone 2 (Koramangala)', flood_risk_score: 0.8, ward_number: 151, metadata: { description: 'Low lying area', centroid: { lat: 12.9352, lng: 77.6245 }, last_inspection: '2024-02-28' }, population: 52000, area_sqkm: 3.8 },
-        { id: '3', name: 'Zone 3 (Whitefield)', flood_risk_score: 0.4, ward_number: 85, metadata: { description: 'IT Corridor', centroid: { lat: 12.9698, lng: 77.7500 }, last_inspection: '2024-03-05' }, population: 68000, area_sqkm: 6.5 },
-        { id: '4', name: 'Zone 4 (MG Road)', flood_risk_score: 0.85, ward_number: 111, metadata: { description: 'Central Business District', centroid: { lat: 12.9756, lng: 77.6097 }, last_inspection: '2024-03-10' }, population: 25000, area_sqkm: 2.1 },
-        { id: '5', name: 'Zone 5 (Jayanagar)', flood_risk_score: 0.3, ward_number: 168, metadata: { description: 'Planned residential', centroid: { lat: 12.9250, lng: 77.5938 }, last_inspection: '2024-03-12' }, population: 58000, area_sqkm: 5.1 },
-        { id: '6', name: 'Zone 6 (HSR Layout)', flood_risk_score: 0.6, ward_number: 174, metadata: { description: 'Reclaimed lake bed sectors', centroid: { lat: 12.9121, lng: 77.6446 }, last_inspection: '2024-03-08' }, population: 49000, area_sqkm: 4.5 },
-        { id: '7', name: 'Zone 7 (Electronic City)', flood_risk_score: 0.75, ward_number: 192, metadata: { description: 'Industrial & Residential', centroid: { lat: 12.8452, lng: 77.6602 }, last_inspection: '2024-03-15' }, population: 75000, area_sqkm: 8.2 },
-        { id: '8', name: 'Zone 8 (Malleshwaram)', flood_risk_score: 0.25, ward_number: 45, metadata: { description: 'Old Bengaluru', centroid: { lat: 13.0031, lng: 77.5643 }, last_inspection: '2024-03-18' }, population: 42000, area_sqkm: 3.5 },
+        { id: '1', name: 'Zone 1 (Indiranagar)', flood_risk_score: 0.2, ward_number: 112, metadata: { description: 'Residential heavy', centroid: { lat: 12.9716, lng: 77.6412 }, last_inspection: '2024-03-01' }, population: 45000, area_sqkm: 4.2, geometry: { type: "Polygon", coordinates: [[[77.63, 12.96], [77.65, 12.96], [77.65, 12.98], [77.63, 12.98], [77.63, 12.96]]] } },
+        { id: '2', name: 'Zone 2 (Koramangala)', flood_risk_score: 0.8, ward_number: 151, metadata: { description: 'Low lying area', centroid: { lat: 12.9352, lng: 77.6245 }, last_inspection: '2024-02-28' }, population: 52000, area_sqkm: 3.8, geometry: { type: "Polygon", coordinates: [[[77.61, 12.92], [77.63, 12.92], [77.63, 12.94], [77.61, 12.94], [77.61, 12.92]]] } },
+        { id: '3', name: 'Zone 3 (Whitefield)', flood_risk_score: 0.4, ward_number: 85, metadata: { description: 'IT Corridor', centroid: { lat: 12.9698, lng: 77.7500 }, last_inspection: '2024-03-05' }, population: 68000, area_sqkm: 6.5, geometry: { type: "Polygon", coordinates: [[[77.73, 12.96], [77.76, 12.96], [77.76, 12.98], [77.73, 12.98], [77.73, 12.96]]] } },
+        { id: '4', name: 'Zone 4 (MG Road)', flood_risk_score: 0.85, ward_number: 111, metadata: { description: 'Central Business District', centroid: { lat: 12.9756, lng: 77.6097 }, last_inspection: '2024-03-10' }, population: 25000, area_sqkm: 2.1, geometry: { type: "Polygon", coordinates: [[[77.59, 12.97], [77.61, 12.97], [77.61, 12.98], [77.59, 12.98], [77.59, 12.97]]] } },
       ]);
 
       setReports([
-        { id: '101', title: 'Severe Waterlogging', description: 'Main road blocked due to heavy rain', status: 'pending', priority: 'high', created_at: new Date().toISOString() },
-        { id: '102', title: 'Blocked Drain', description: 'Plastic waste clogging the drainage', status: 'in_progress', priority: 'medium', created_at: new Date().toISOString() },
-        { id: '103', title: 'Manhole Overflow', description: 'Sewage overflow near market', status: 'resolved', priority: 'high', created_at: new Date().toISOString() },
-        { id: '104', title: 'Pothole Detection', description: 'AI detected multiple potholes', status: 'pending', priority: 'medium', created_at: new Date().toISOString() },
+        { id: '101', title: 'Severe Waterlogging', description: 'Main road blocked due to heavy rain', status: 'pending', priority: 'high', created_at: new Date().toISOString(), location: { coordinates: [77.61, 12.975] } },
+        { id: '102', title: 'Blocked Drain', description: 'Plastic waste clogging the drainage', status: 'in_progress', priority: 'medium', created_at: new Date().toISOString(), location: { coordinates: [77.64, 12.965] } },
+        { id: '103', title: 'Manhole Overflow', description: 'Sewage overflow near market', status: 'resolved', priority: 'high', created_at: new Date().toISOString(), location: { coordinates: [77.62, 12.93] } },
+        { id: '104', title: 'Pothole Detection', description: 'AI detected multiple potholes', status: 'pending', priority: 'medium', created_at: new Date().toISOString(), location: { coordinates: [77.74, 12.97] } },
         {
           id: '105',
           title: 'Drainage Analysis: Sector 4',
@@ -57,6 +54,7 @@ export default function OfficialDashboard() {
           summary: 'Complex drainage network with potential bottlenecks. Flow capacity sufficient for average rainfall but risky during monsoon.',
           model_url: 'https://github.com/KhronosGroup/glTF-Sample-Models/raw/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
           status: 'pending',
+          location: { coordinates: [77.59, 12.975] },
           priority: 'medium',
           created_at: new Date().toISOString()
         },
@@ -109,7 +107,7 @@ export default function OfficialDashboard() {
 
     try {
       const [zonesResult, reportsResult, recommendationsResult] = await Promise.all([
-        supabase.from("zones").select("*"),
+        supabase.from("zones_geojson").select("*"), // geometry as GeoJSON, not raw PostGIS WKB
         supabase.from("reports").select("*").order("created_at", { ascending: false }),
         supabase.from("ai_recommendations").select("*, zones(name)").order("priority", { ascending: false }),
       ]);
@@ -362,7 +360,7 @@ export default function OfficialDashboard() {
               <TabsTrigger value="3d" className="rounded-full px-4 py-2 hover:text-blue-600 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md">3D View</TabsTrigger>
               <TabsTrigger value="reports" id="reports-tab" className="rounded-full px-4 py-2 hover:text-blue-600 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md">Reports</TabsTrigger>
               <TabsTrigger value="recommendations" className="rounded-full px-4 py-2 hover:text-blue-600 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md">Actions</TabsTrigger>
-              <TabsTrigger value="training" className="rounded-full px-4 py-2 hover:text-blue-600 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md">Training Data</TabsTrigger>
+              <TabsTrigger value="national" className="rounded-full px-4 py-2 hover:text-blue-600 transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md">National Priority</TabsTrigger>
             </TabsList>
           </div>
 
@@ -648,62 +646,9 @@ export default function OfficialDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="training" className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Model Training Dataset</CardTitle>
-                <CardDescription>Reference dataset used for training the drainage risk prediction model.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-muted text-muted-foreground">
-                      <tr>
-                        <th className="p-3 font-medium">Blueprint ID</th>
-                        <th className="p-3 font-medium">Pipe Count</th>
-                        <th className="p-3 font-medium">Avg Dia (mm)</th>
-                        <th className="p-3 font-medium">Slope %</th>
-                        <th className="p-3 font-medium">Manholes</th>
-                        <th className="p-3 font-medium">Blockages</th>
-                        <th className="p-3 font-medium">Lat / Lng</th>
-                        <th className="p-3 font-medium">Risk Score</th>
-                        <th className="p-3 font-medium">Label</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {[
-                        { id: "BP001", pipes: 12, dia: 450, slope: 0.8, manholes: 4, blockages: 2, loc: "12.9412, 77.6102", score: 0.67, label: "Medium" },
-                        { id: "BP002", pipes: 7, dia: 300, slope: 0.4, manholes: 2, blockages: 4, loc: "12.9766, 77.5994", score: 0.82, label: "High" },
-                        { id: "BP003", pipes: 15, dia: 600, slope: 1.2, manholes: 6, blockages: 0, loc: "12.9501, 77.5809", score: 0.21, label: "Low" },
-                        { id: "BP004", pipes: 9, dia: 350, slope: 0.5, manholes: 3, blockages: 3, loc: "12.9650, 77.6050", score: 0.73, label: "High" },
-                        { id: "BP005", pipes: 11, dia: 500, slope: 0.9, manholes: 5, blockages: 1, loc: "12.9594, 77.6345", score: 0.44, label: "Medium" },
-                        { id: "BP006", pipes: 6, dia: 250, slope: 0.3, manholes: 1, blockages: 5, loc: "12.9312, 77.6223", score: 0.91, label: "High" },
-                        { id: "BP007", pipes: 14, dia: 550, slope: 1.0, manholes: 4, blockages: 1, loc: "12.9485, 77.5991", score: 0.39, label: "Medium" },
-                        { id: "BP008", pipes: 10, dia: 400, slope: 0.7, manholes: 3, blockages: 2, loc: "12.9701, 77.6188", score: 0.59, label: "Medium" },
-                        { id: "BP009", pipes: 5, dia: 200, slope: 0.2, manholes: 1, blockages: 6, loc: "12.9451, 77.5852", score: 0.95, label: "High" },
-                        { id: "BP010", pipes: 16, dia: 650, slope: 1.3, manholes: 7, blockages: 0, loc: "12.9812, 77.6200", score: 0.15, label: "Low" },
-                      ].map((row, i) => (
-                        <tr key={i} className="hover:bg-muted/50">
-                          <td className="p-3 font-medium">{row.id}</td>
-                          <td className="p-3">{row.pipes}</td>
-                          <td className="p-3">{row.dia}</td>
-                          <td className="p-3">{row.slope}</td>
-                          <td className="p-3">{row.manholes}</td>
-                          <td className="p-3">{row.blockages}</td>
-                          <td className="p-3 text-xs text-muted-foreground">{row.loc}</td>
-                          <td className="p-3">{row.score}</td>
-                          <td className="p-3">
-                            <Badge variant={row.label === "High" ? "destructive" : row.label === "Medium" ? "secondary" : "outline"} className={row.label === "Low" ? "bg-green-100 text-green-800 border-green-200" : ""}>
-                              {row.label}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+
+          <TabsContent value="national" className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <NationalPriorityReport />
           </TabsContent>
         </Tabs>
       </main>

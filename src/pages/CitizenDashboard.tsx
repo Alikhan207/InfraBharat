@@ -167,8 +167,9 @@ const CitizenDashboard = () => {
               <ThemeToggle />
               <Button
                 variant="outline"
-                onClick={() => {
+                onClick={async () => {
                   localStorage.removeItem("demo_role");
+                  await supabase.auth.signOut();
                   navigate("/");
                 }}
                 className="border-gray-300"

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGemini } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,9 +50,9 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const prompt = `You are an expert civil engineer analyzing drainage infrastructure for ${zone.name}.
@@ -105,47 +106,32 @@ Return JSON with this exact structure:
 
 Be specific with calculations. Ensure proposed specs show measurable improvements.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are an expert civil engineer specializing in urban drainage systems. Provide precise, data-driven recommendations with accurate flow calculations." 
+    let aiData;
+    try {
+      aiData = await callGemini(
+        [
+          {
+            role: "system",
+            content: "You are an expert civil engineer specializing in urban drainage systems. Provide precise, data-driven recommendations with accurate flow calculations.",
           },
-          { role: "user", content: prompt }
+          { role: "user", content: prompt },
         ],
-        temperature: 0.5,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
+        { temperature: 0.5 }
+      );
+    } catch (e) {
+      const status = (e as { status?: number })?.status;
+      console.error("Gemini error:", e);
+      if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits to your workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, errorText);
       return new Response(
         JSON.stringify({ error: "AI analysis failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const aiData = await aiResponse.json();
     const content = aiData.choices[0].message.content;
 
     let recommendation;

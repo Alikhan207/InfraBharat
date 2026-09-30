@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGemini } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,10 +60,10 @@ serve(async (req) => {
       );
     }
 
-    // Generate AI recommendation using Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Generate AI recommendation using Gemini
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const drainageAssets = zone.metadata?.drainage_assets || [];
@@ -93,32 +94,22 @@ Based on this data, provide:
 
 Format as JSON with keys: severity, actions (array of strings), estimated_cost (number), suggested_pipe_mm (number), urgency (string), timeline_days (number), analysis (detailed text).`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
+    let aiData;
+    try {
+      aiData = await callGemini(
+        [
           { role: "system", content: "You are an expert civil engineer specializing in urban drainage systems." },
-          { role: "user", content: prompt }
+          { role: "user", content: prompt },
         ],
-        temperature: 0.7,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, errorText);
+        { temperature: 0.7 }
+      );
+    } catch (e) {
+      console.error("Gemini error:", e);
       return new Response(
         JSON.stringify({ error: "AI generation failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const aiData = await aiResponse.json();
     const content = aiData.choices[0].message.content;
 
     // Parse AI response

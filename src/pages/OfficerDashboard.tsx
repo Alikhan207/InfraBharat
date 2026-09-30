@@ -102,7 +102,7 @@ export default function OfficerDashboard() {
 
     try {
       const [zonesResult, reportsResult, recommendationsResult] = await Promise.all([
-        supabase.from("zones").select("*"),
+        supabase.from("zones_geojson").select("*"), // geometry as GeoJSON, not raw PostGIS WKB
         supabase.from("reports").select("*").order("created_at", { ascending: false }),
         supabase.from("ai_recommendations").select("*, zones(name)").order("priority", { ascending: false }),
       ]);

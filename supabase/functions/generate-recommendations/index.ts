@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGemini } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,10 +49,10 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    // Generate AI recommendation using Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Generate AI recommendation using Gemini directly
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const prompt = `You are an expert civil engineer analyzing urban drainage infrastructure. 
@@ -81,32 +82,22 @@ Please provide:
 
 Format as JSON with keys: title, description, current_specs (object), proposed_specs (object), estimated_cost (number), estimated_timeline_days (number), priority (1-5).`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
+    let aiData;
+    try {
+      aiData = await callGemini(
+        [
           { role: "system", content: "You are an expert civil engineer specializing in urban infrastructure and drainage systems." },
-          { role: "user", content: prompt }
+          { role: "user", content: prompt },
         ],
-        temperature: 0.7,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, errorText);
+        { temperature: 0.7 }
+      );
+    } catch (e) {
+      console.error("Gemini error:", e);
       return new Response(
         JSON.stringify({ error: "AI generation failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const aiData = await aiResponse.json();
     const content = aiData.choices[0].message.content;
 
     // Try to parse JSON from the response

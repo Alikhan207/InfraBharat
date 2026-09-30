@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGeminiVision } from "../_shared/gemini.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -20,10 +21,24 @@ serve(async (req) => {
             );
         }
 
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (!LOVABLE_API_KEY) {
-            throw new Error("LOVABLE_API_KEY is not configured");
+        const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+        if (!GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY is not configured");
         }
+
+        // Gemini's direct API takes inline base64 image data, not remote
+        // URLs, so fetch each photo and encode it before calling the model.
+        const images = await Promise.all(
+            photo_urls.map(async (url: string) => {
+                const imgRes = await fetch(url);
+                if (!imgRes.ok) throw new Error(`Failed to fetch photo: ${url}`);
+                const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+                const buf = new Uint8Array(await imgRes.arrayBuffer());
+                let binary = "";
+                for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+                return { base64: btoa(binary), mimeType };
+            })
+        );
 
         const prompt = `You are an expert civil engineer and computer vision specialist.
 Analyze the provided street photos to estimate the road dimensions.
@@ -52,41 +67,11 @@ Return JSON with this exact structure:
 
 Be realistic. If the image is unclear, set confidence to Low.`;
 
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model: "google/gemini-2.5-flash",
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are an expert civil engineer specializing in infrastructure analysis from visual data."
-                    },
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: prompt },
-                            ...photo_urls.map((url: string) => ({
-                                type: "image_url",
-                                image_url: { url }
-                            }))
-                        ]
-                    }
-                ],
-                temperature: 0.2,
-            }),
-        });
+        const fullPrompt =
+            "You are an expert civil engineer specializing in infrastructure analysis from visual data.\n\n" +
+            prompt;
 
-        if (!aiResponse.ok) {
-            const errorText = await aiResponse.text();
-            console.error("AI Gateway error:", aiResponse.status, errorText);
-            throw new Error(`AI Gateway failed: ${aiResponse.status}`);
-        }
-
-        const aiData = await aiResponse.json();
+        const aiData = await callGeminiVision(fullPrompt, images, { temperature: 0.2 });
         const content = aiData.choices[0].message.content;
 
         let result;

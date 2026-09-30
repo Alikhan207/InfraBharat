@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, Send, X, Loader2 } from "lucide-react";
+import { MessageCircle, Send, X, Loader2, Mic, Square } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Message {
@@ -23,7 +23,10 @@ export function CitizenChatbot() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,6 +34,50 @@ export function CitizenChatbot() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Shared handling for whatever the citizen-chatbot function returns,
+  // whether the turn started as typed text or transcribed voice.
+  const handleBotResponse = (data: any, error: any, fallbackUserText: string) => {
+    if (error || !data) {
+      console.warn("Edge function failed, falling back to local simulation.", error);
+
+      const lowerMsg = fallbackUserText.toLowerCase();
+      let isReportIntent = false;
+      let mockResponse = "I'm currently running in a limited local mode. I can help you report issues! How can I assist you?";
+
+      if (lowerMsg.includes("report") || lowerMsg.includes("issue") || lowerMsg.includes("pothole") || lowerMsg.includes("water") || lowerMsg.includes("road")) {
+        isReportIntent = true;
+      }
+
+      if (isReportIntent) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: "I understand you want to report an issue. I'll help you create a report. Please go to the Citizen Reporting page to submit detailed information with photos."
+        }]);
+        toast({
+          title: "Ready to report",
+          description: "Navigate to Citizen Reporting to file your issue",
+        });
+      } else {
+        setMessages(prev => [...prev, { role: "assistant", content: mockResponse }]);
+      }
+      return;
+    }
+
+    if (data.type === "report_intent") {
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "I understand you want to report an issue. I'll help you create a report. Please go to the Citizen Reporting page to submit detailed information with photos."
+      }]);
+
+      toast({
+        title: "Ready to report",
+        description: "Navigate to Citizen Reporting to file your issue",
+      });
+    } else {
+      setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -51,46 +98,7 @@ export function CitizenChatbot() {
         },
       });
 
-      // Provide frontend fallback if Edge function fails due to missing keys
-      if (error || !data) {
-        console.warn("Edge function failed, falling back to local simulation.", error);
-
-        const lowerMsg = userMessage.toLowerCase();
-        let isReportIntent = false;
-        let mockResponse = "I'm currently running in a limited local mode. I can help you report issues! How can I assist you?";
-
-        if (lowerMsg.includes("report") || lowerMsg.includes("issue") || lowerMsg.includes("pothole") || lowerMsg.includes("water") || lowerMsg.includes("road")) {
-          isReportIntent = true;
-        }
-
-        if (isReportIntent) {
-          setMessages(prev => [...prev, {
-            role: "assistant",
-            content: "I understand you want to report an issue. I'll help you create a report. Please go to the Citizen Reporting page to submit detailed information with photos."
-          }]);
-          toast({
-            title: "Ready to report",
-            description: "Navigate to Citizen Reporting to file your issue",
-          });
-        } else {
-          setMessages(prev => [...prev, { role: "assistant", content: mockResponse }]);
-        }
-        return;
-      }
-
-      if (data.type === "report_intent") {
-        setMessages(prev => [...prev, {
-          role: "assistant",
-          content: "I understand you want to report an issue. I'll help you create a report. Please go to the Citizen Reporting page to submit detailed information with photos."
-        }]);
-
-        toast({
-          title: "Ready to report",
-          description: "Navigate to Citizen Reporting to file your issue",
-        });
-      } else {
-        setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
-      }
+      handleBotResponse(data, error, userMessage);
     } catch (error: any) {
       console.error("Chatbot error:", error);
       toast({
@@ -102,6 +110,97 @@ export function CitizenChatbot() {
         role: "assistant",
         content: "I'm sorry, I encountered an error. Please try again."
       }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Voice intake: record with MediaRecorder, send the audio straight to
+  // citizen-chatbot (which transcribes + detects language + translates),
+  // so citizens can speak in Hindi/Kannada/Tamil/etc. instead of typing.
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        await sendVoiceMessage(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone access failed:", err);
+      toast({
+        title: "Microphone unavailable",
+        description: "Couldn't access your microphone. You can still type your message.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        // strip the "data:audio/webm;base64," prefix
+        resolve(result.split(",")[1] ?? "");
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const sendVoiceMessage = async (audioBlob: Blob) => {
+    setIsLoading(true);
+    // Placeholder bubble while we wait for transcription + reply
+    setMessages(prev => [...prev, { role: "user", content: "🎤 (voice message)" }]);
+
+    try {
+      const audioBase64 = await blobToBase64(audioBlob);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase.functions.invoke("citizen-chatbot", {
+        body: {
+          audio_base64: audioBase64,
+          audio_encoding: "WEBM_OPUS",
+          audio_sample_rate_hertz: 48000,
+          user_id: user?.id,
+          conversation_history: messages,
+        },
+      });
+
+      // Replace the placeholder with the actual transcript, if we got one
+      if (data?.transcript) {
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastUserIdx = updated.map(m => m.role).lastIndexOf("user");
+          if (lastUserIdx !== -1) updated[lastUserIdx] = { role: "user", content: data.transcript };
+          return updated;
+        });
+      }
+
+      handleBotResponse(data, error, data?.transcript ?? "");
+    } catch (error: any) {
+      console.error("Voice chatbot error:", error);
+      toast({
+        title: "Error",
+        description: "Couldn't process your voice message. Please try typing instead.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -172,15 +271,24 @@ export function CitizenChatbot() {
         <div className="p-4 border-t">
           <div className="flex gap-2">
             <Input
-              placeholder="Ask me anything..."
+              placeholder={isRecording ? "Listening..." : "Ask me anything..."}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              disabled={isLoading}
+              disabled={isLoading || isRecording}
             />
             <Button
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isLoading}
+              variant={isRecording ? "destructive" : "outline"}
+              size="icon"
+              title={isRecording ? "Stop recording" : "Speak in any language"}
+            >
+              {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+            <Button
               onClick={sendMessage}
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || isRecording || !input.trim()}
               size="icon"
             >
               <Send className="h-4 w-4" />

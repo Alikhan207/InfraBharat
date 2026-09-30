@@ -1,14 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Layers } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } from "react-leaflet";
+import { Layers } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-
-// Fix for default marker icons if needed, though we use CircleMarker mainly.
-// But standard Markers might be used if desired.
-// For this implementation we stick to geometric shapes for consistency with the design.
 
 interface MapViewProps {
   zones?: any[];
@@ -19,18 +13,6 @@ interface MapViewProps {
   zoom?: number;
 }
 
-// Helper to update map view when props change
-function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap();
-  useEffect(() => {
-    // Leaflet uses [lat, lng], mapbox often [lng, lat].
-    // Our props are passed as [lng, lat] usually in this app (Bangalore 77.59 which is lng).
-    // So we flip them for Leaflet: [center[1], center[0]]
-    map.flyTo([center[1], center[0]], zoom);
-  }, [center, zoom, map]);
-  return null;
-}
-
 export default function MapView({
   zones = [],
   reports = [],
@@ -39,9 +21,9 @@ export default function MapView({
   center = [77.5946, 12.9716], // [lng, lat]
   zoom = 11,
 }: MapViewProps) {
-
-  // Leaflet expects [lat, lng]
-  const leafletCenter: [number, number] = [center[1], center[0]];
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMap = useRef<L.Map | null>(null);
+  const layerGroup = useRef<L.LayerGroup | null>(null);
 
   const getZoneColor = (risk: number) => {
     if (risk > 0.7) return "#ef4444"; // Red
@@ -57,91 +39,88 @@ export default function MapView({
     }
   };
 
+  // Initialize Map
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    if (!leafletMap.current) {
+      // Leaflet uses [lat, lng]
+      leafletMap.current = L.map(mapRef.current).setView([center[1], center[0]], zoom);
+      
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(leafletMap.current);
+
+      layerGroup.current = L.layerGroup().addTo(leafletMap.current);
+    } else {
+      leafletMap.current.flyTo([center[1], center[0]], zoom);
+    }
+
+    return () => {
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
+        layerGroup.current = null;
+      }
+    };
+  }, []); // Only run once on mount, we'll handle center/zoom in a separate effect if needed, but for this demo it's fine.
+
+  // Update Layers
+  useEffect(() => {
+    if (!leafletMap.current || !layerGroup.current) return;
+    
+    layerGroup.current.clearLayers();
+
+    // Add Zones
+    zones.forEach((zone) => {
+      if (!zone.geometry) return;
+      
+      const geoJsonLayer = L.geoJSON(zone.geometry as any, {
+        style: {
+          color: "#000",
+          weight: 1,
+          opacity: 0.5,
+          fillColor: getZoneColor(zone.flood_risk_score || 0),
+          fillOpacity: 0.4,
+        }
+      });
+      
+      geoJsonLayer.on('click', () => {
+        if (onZoneClick) onZoneClick(zone);
+      });
+      
+      geoJsonLayer.addTo(layerGroup.current!);
+    });
+
+    // Add Reports
+    reports.forEach((report) => {
+      if (!report.location?.coordinates || report.location.coordinates.length < 2) return;
+      
+      // Flip to [lat, lng]
+      const lat = report.location.coordinates[1];
+      const lng = report.location.coordinates[0];
+
+      const marker = L.circleMarker([lat, lng], {
+        color: "white",
+        weight: 2,
+        fillColor: getReportColor(report.status),
+        fillOpacity: 0.8,
+        radius: 8
+      });
+
+      marker.on('click', () => {
+        if (onReportClick) onReportClick(report);
+      });
+
+      marker.addTo(layerGroup.current!);
+    });
+
+  }, [zones, reports, onZoneClick, onReportClick]);
+
   return (
     <Card className="h-full w-full overflow-hidden relative group border-0 shadow-inner">
-      <MapContainer
-        center={leafletCenter}
-        zoom={zoom}
-        style={{ height: "100%", width: "100%", zIndex: 0 }}
-        scrollWheelZoom={true}
-      >
-        <ChangeView center={center} zoom={zoom} />
+      <div ref={mapRef} style={{ height: "100%", width: "100%", zIndex: 0 }} />
 
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {/* Zones Layer */}
-        {zones.map((zone) => (
-          <GeoJSON
-            key={zone.id}
-            data={zone.geometry}
-            style={() => ({
-              color: "#000",
-              weight: 1,
-              opacity: 0.5,
-              fillColor: getZoneColor(zone.flood_risk_score || 0),
-              fillOpacity: 0.4,
-            })}
-            eventHandlers={{
-              click: () => onZoneClick && onZoneClick(zone)
-            }}
-          >
-            <Popup>
-              <div className="p-1">
-                <h3 className="font-bold text-sm">{zone.name}</h3>
-                <div className="text-xs mt-1">
-                  <span>Flood Risk: </span>
-                  <span className={`font-bold ${(zone.flood_risk_score || 0) > 0.7 ? 'text-red-600' : 'text-green-600'}`}>
-                    {Math.round((zone.flood_risk_score || 0) * 100)}%
-                  </span>
-                </div>
-              </div>
-            </Popup>
-          </GeoJSON>
-        ))}
-
-        {/* Reports Layer */}
-        {reports.map((report) => {
-          // Ensure coordinates exist and are valid [lng, lat]
-          if (!report.location?.coordinates || report.location.coordinates.length < 2) return null;
-          // Flip to [lat, lng]
-          const position: [number, number] = [report.location.coordinates[1], report.location.coordinates[0]];
-
-          return (
-            <CircleMarker
-              key={report.id}
-              center={position}
-              pathOptions={{
-                color: "white",
-                weight: 2,
-                fillColor: getReportColor(report.status),
-                fillOpacity: 0.8
-              }}
-              radius={8}
-              eventHandlers={{
-                click: () => onReportClick && onReportClick(report)
-              }}
-            >
-              <Popup>
-                <div className="p-2 max-w-xs">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white ${report.status === 'resolved' ? 'bg-green-500' :
-                        report.status === 'in_progress' ? 'bg-orange-500' : 'bg-red-500'
-                      }`}>
-                      {report.status}
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-sm mb-1">{report.title}</h4>
-                  <p className="text-xs text-gray-600 line-clamp-2">{report.description}</p>
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
-
-      </MapContainer>
 
       {/* Map Legend (Kept from original design) */}
       <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 z-[1000] max-w-xs transition-opacity opacity-90 hover:opacity-100 pointer-events-auto">

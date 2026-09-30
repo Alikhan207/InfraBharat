@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-torch
-torch_geometric
-anthropic
-pydantic

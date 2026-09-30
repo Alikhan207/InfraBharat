@@ -32,23 +32,21 @@ InfraBharat tells engineers exactly WHAT to fix and HOW.
 
 ## Tech Stack
 
-- Frontend: React
-- Backend: Python ML Backend (FastAPI)
-- Database: Supabase
-- Infrastructure: Docker, Docker Compose
-- AI/ML: Hydraulic modelling + ML prescription engine
+- Frontend: React (Vite)
+- Backend: Supabase Edge Functions (Deno/TypeScript)
+- Database: Supabase PostgreSQL
+- AI Engine: Google Gemini API (Flash Models)
+- Infrastructure: Docker Compose
 
 ## Architecture
 ```
 Citizen Portal (React)
        |
-  AI Prescription Engine (Python ML Backend)
+  Supabase Edge Functions (Gemini AI Chatbot & Recommendation Engine)
        |
-  Engineer Validation Dashboard
+  Engineer Validation Dashboard & National Priority Tab
        |
-  Municipal Execution Tracker
-       |
-  Supabase (Real-time Database)
+  Supabase (Real-time Database + PostGIS)
 ```
 
 ## Awards
@@ -67,14 +65,11 @@ Citizen Portal (React)
 ```bash
 # Clone the repo
 git clone https://github.com/Alikhan207/InfraBharat
+cd InfraBharat
 
-# Frontend
-cd src
+# Install dependencies and run frontend
 npm install
-npm start
+npm run dev
 
-# Backend
-cd python-ml-backend
-pip install -r requirements.txt
-python app.py
+# (Backend is deployed via Supabase Edge Functions)
 ```
