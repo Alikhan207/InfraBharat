@@ -170,25 +170,6 @@ export function CitizenChatbot() {
     setMessages(prev => [...prev, { role: "user", content: "🎤 (voice message)" }]);
 
     try {
-      // Hackathon Demo Mode - Fallback for missing Google Cloud API Keys
-      if (localStorage.getItem("demo_role")) {
-        console.log("Demo Mode Active: Using mock voice transcription.");
-        setTimeout(() => {
-          // Fake transcript
-          const fakeTranscript = "There is heavy waterlogging near the metro station.";
-          setMessages(prev => {
-            const updated = [...prev];
-            const lastUserIdx = updated.map(m => m.role).lastIndexOf("user");
-            if (lastUserIdx !== -1) updated[lastUserIdx] = { role: "user", content: fakeTranscript };
-            return updated;
-          });
-          // Fake reply
-          setMessages(prev => [...prev, { role: "assistant", content: "I've noted the waterlogging near the metro station. Would you like to file a formal civic report?" }]);
-          setIsLoading(false);
-        }, 2000);
-        return; // Skip real API call
-      }
-
       const audioBase64 = await blobToBase64(audioBlob);
       const { data: { user } } = await supabase.auth.getUser();
 
